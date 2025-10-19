@@ -1,156 +1,115 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot - CreaMas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        .chat-header {
-            background-color: #4a6baf;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        .chat-messages {
-            height: 500px;
-            overflow-y: auto;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        .message {
-            margin-bottom: 15px;
-            max-width: 80%;
-        }
-        .user-message {
-            margin-left: auto;
-            background-color: #007bff;
-            color: white;
-            border-radius: 15px 15px 0 15px;
-            padding: 10px 15px;
-        }
-        .assistant-message {
-            margin-right: auto;
-            background-color: #e9ecef;
-            border-radius: 15px 15px 15px 0;
-            padding: 10px 15px;
-        }
-        .chat-input {
-            display: flex;
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid #dee2e6;
-        }
-        .typing-indicator {
-            display: none;
-            padding: 10px;
-            color: #6c757d;
-            font-style: italic;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat IA - CreaMas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .chat-wrapper { max-width: 860px; margin: 32px auto; }
+    .chat-box { height: 460px; overflow-y: auto; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; }
+    .msg { max-width: 80%; margin-bottom: 10px; padding: 10px 14px; border-radius: 14px; word-wrap: break-word; }
+    .msg-user { margin-left: auto; color: #fff; background: #0d6efd; border-radius: 14px 14px 0 14px; }
+    .msg-bot { margin-right: auto; background: #fff; border: 1px solid #e9ecef; border-radius: 14px 14px 14px 0; }
+    .input-row { gap: 8px; }
+    .typing { display: none; color: #6c757d; font-style: italic; padding: 6px 0; }
+  </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="chat-container">
-            <div class="chat-header">
-                <h4>Asistente Virtual</h4>
-                <small>¿En qué puedo ayudarte hoy?</small>
-            </div>
-            
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages will be added here dynamically -->
-            </div>
-            
-            <div class="typing-indicator" id="typingIndicator">
-                El asistente está escribiendo...
-            </div>
-            
-            <div class="chat-input">
-                <input type="text" class="form-control me-2" id="userInput" 
-                       placeholder="Escribe tu mensaje aquí..." autofocus>
-                <button class="btn btn-primary" id="sendButton">Enviar</button>
-            </div>
-        </div>
-    </div>
+  <div class="chat-wrapper">
+    <h3 class="mb-2">Asistente CreaMas</h3>
+    <p class="text-muted mb-3">Escribe tu mensaje y el asistente responderá.</p>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script th:inline="javascript">
-        $(document).ready(function() {
-            const chatMessages = $('#chatMessages');
-            const userInput = $('#userInput');
-            const sendButton = $('#sendButton');
-            const typingIndicator = $('#typingIndicator');
-            
-            // Scroll to bottom of chat
-            function scrollToBottom() {
-                chatMessages.scrollTop(chatMessages[0].scrollHeight);
-            }
-            
-            // Add a message to the chat
-            function addMessage(role, content) {
-                const messageClass = role === 'user' ? 'user-message' : 'assistant-message';
-                const messageHtml = `
-                    <div class="message ${messageClass}">
-                        ${content.replace(/\n/g, '<br>')}
-                    </div>
-                `;
-                chatMessages.append(messageHtml);
-                scrollToBottom();
-            }
-            
-            // Handle send message
-            function sendMessage() {
-                const message = userInput.val().trim();
-                if (message === '') return;
-                
-                // Add user message to chat
-                addMessage('user', message);
-                userInput.val('');
-                
-                // Show typing indicator
-                typingIndicator.show();
-                scrollToBottom();
-                
-                // Send message to server
-                $.ajax({
-                    url: '/chat/send',
-                    method: 'POST',
-                    data: { message: message },
-                    success: function(response) {
-                        // Hide typing indicator
-                        typingIndicator.hide();
-                        
-                        // Add assistant's response to chat
-                        addMessage(response.role, response.content);
-                    },
-                    error: function(xhr, status, error) {
-                        typingIndicator.hide();
-                        addMessage('assistant', 'Lo siento, ha ocurrido un error al procesar tu mensaje.');
-                        console.error('Error:', error);
-                    }
-                });
-            }
-            
-            // Event listeners
-            sendButton.on('click', sendMessage);
-            userInput.on('keypress', function(e) {
-                if (e.which === 13) { // Enter key
-                    sendMessage();
-                }
-            });
-            
-            // Initial focus on input
-            userInput.focus();
+    <div id="chatBox" class="chat-box"></div>
+    <div id="typing" class="typing">El asistente está escribiendo...</div>
+
+    <form id="chatForm" class="mt-3" autocomplete="off">
+      <div class="d-flex input-row">
+        <input id="messageInput" type="text" class="form-control" placeholder="Escribe tu mensaje...">
+        <button id="sendBtn" type="submit" class="btn btn-primary">Enviar</button>
+        <button id="clearBtn" type="button" class="btn btn-outline-secondary">Limpiar historial</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(function() {
+      const BASE_URL = 'http://localhost:8080'; // URL de tu backend
+      const $chat = $('#chatBox');
+      const $form = $('#chatForm');
+      const $input = $('#messageInput');
+      const $typing = $('#typing');
+
+      function scrollToBottom() { $chat.scrollTop($chat[0].scrollHeight); }
+
+      function addMsg(role, text) {
+        const cls = role === 'user' ? 'msg msg-user' : 'msg msg-bot';
+        const safe = (text || '').toString().replace(/\n/g, '<br>');
+        $chat.append(`<div class="${cls}">${safe}</div>`);
+        scrollToBottom();
+      }
+
+      // Cargar historial al inicio
+      $.ajax({
+        url: `${BASE_URL}/api/chat/history`,
+        method: 'GET',
+        dataType: 'json',
+        success: function(list) {
+          if (Array.isArray(list) && list.length > 0) {
+            list.forEach(m => addMsg(m.role, m.content));
+          } else {
+            addMsg('assistant', 'Hola, soy tu asistente de CreaMas. ¿En qué puedo ayudarte hoy?');
+          }
+        },
+        error: function(xhr, status, err) {
+          console.warn("[WARN] No se pudo cargar historial:", status, err);
+          addMsg('assistant', 'Hola, soy tu asistente de CreaMas. ¿En qué puedo ayudarte hoy?');
+        }
+      });
+
+      // Enviar mensaje
+      $form.on('submit', function(e) {
+        e.preventDefault();
+        const message = ($input.val() || '').trim();
+        if (!message) return;
+
+        addMsg('user', message);
+        $input.val('');
+        $typing.show();
+
+        $.ajax({
+          url: `${BASE_URL}/api/chat/send`,
+          method: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify({ content: message }),
+          success: function(resp) {
+            $typing.hide();
+            const role = resp.role || 'assistant';
+            const content = resp.content || 'Sin contenido.';
+            addMsg(role, content);
+          },
+          error: function(xhr, status, err) {
+            $typing.hide();
+            console.error("[ERROR] No se pudo enviar el mensaje:", status, err, xhr.responseText);
+            addMsg('assistant', 'Error al procesar tu mensaje.');
+          }
         });
-    </script>
+      });
+
+      // Limpiar historial
+      $('#clearBtn').on('click', function() {
+        $.ajax({
+          url: `${BASE_URL}/api/chat/history`,
+          method: 'DELETE',
+          complete: function() {
+            $chat.empty();
+            addMsg('assistant', 'Historial borrado. ¿En qué puedo ayudarte ahora?');
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>

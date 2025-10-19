@@ -8,17 +8,11 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/invoices/**").permitAll()
-                .anyRequest().permitAll()
-            )
-            .httpBasic(Customizer.withDefaults())
-            .formLogin(form -> form.disable());
+            .csrf().disable() // permite POST JSON sin token CSRF
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll()); // todo libre
         return http.build();
     }
 }

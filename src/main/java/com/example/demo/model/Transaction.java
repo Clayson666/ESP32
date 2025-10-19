@@ -10,69 +10,69 @@ public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id; // Unique identifier with auto-increment
+    private int id;
+
+    @Column(nullable = true)
+    private String userId; // Usuario que realiza la transacción
 
     @Column(nullable = false)
-    private String dato; // Data to be processed by Arduino
+    private String vitamina; // Vitamina elegida (A/B/C/D)
 
     @Column(nullable = false)
-    private String estado; // Status of the transaction
+    private String estado; // PENDIENTE, CONFIRMADO, RECHAZADO
 
     @Column(name = "fecha_creacion", nullable = false)
-    private LocalDateTime fechaCreacion; // Command sent time
+    private LocalDateTime fechaCreacion; // Cuando se creó la transacción
 
-    @Column(name = "fecha_procesado")
-    private LocalDateTime fechaProcesado; // Command executed time (optional)
+    @Column(name = "fecha_confirmacion")
+    private LocalDateTime fechaConfirmacion; // Cuando el usuario confirma vitamina
+
+    @Column(name = "fecha_pago")
+    private LocalDateTime fechaPago; // Cuando sube el comprobante
+
+    @Column(name = "payment_image", columnDefinition = "TEXT")
+    private String paymentImage; // Imagen base64 del comprobante
+
+    @Column(name = "admin_validado")
+    private Boolean adminValidado; // Si el admin validó la transacción
 
     @Column(columnDefinition = "TEXT")
-    private String notas; // Extra information (optional)
+    private String notas; // Información extra opcional
 
-    // Getters and Setters
-    public int getId() {
-        return id;
-    }
+    @Column
+    private Double monto; // Monto de la compra (opcional)
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    // Getters y setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public String getDato() {
-        return dato;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public void setDato(String dato) {
-        this.dato = dato;
-    }
+    public String getVitamina() { return vitamina; }
+    public void setVitamina(String vitamina) { this.vitamina = vitamina; }
 
-    public String getEstado() {
-        return estado;
-    }
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
+    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+    public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
+    public LocalDateTime getFechaConfirmacion() { return fechaConfirmacion; }
+    public void setFechaConfirmacion(LocalDateTime fechaConfirmacion) { this.fechaConfirmacion = fechaConfirmacion; }
 
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+    public LocalDateTime getFechaPago() { return fechaPago; }
+    public void setFechaPago(LocalDateTime fechaPago) { this.fechaPago = fechaPago; }
 
-    public LocalDateTime getFechaProcesado() {
-        return fechaProcesado;
-    }
+    public String getPaymentImage() { return paymentImage; }
+    public void setPaymentImage(String paymentImage) { this.paymentImage = paymentImage; }
 
-    public void setFechaProcesado(LocalDateTime fechaProcesado) {
-        this.fechaProcesado = fechaProcesado;
-    }
+    public Boolean getAdminValidado() { return adminValidado; }
+    public void setAdminValidado(Boolean adminValidado) { this.adminValidado = adminValidado; }
 
-    public String getNotas() {
-        return notas;
-    }
+    public String getNotas() { return notas; }
+    public void setNotas(String notas) { this.notas = notas; }
 
-    public void setNotas(String notas) {
-        this.notas = notas;
-    }
+    public Double getMonto() { return monto; }
+    public void setMonto(Double monto) { this.monto = monto; }
 }

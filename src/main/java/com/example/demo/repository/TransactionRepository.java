@@ -9,4 +9,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     // Additional query methods can be defined here
 
     Transaction findFirstByEstadoOrderByFechaCreacionAsc(String estado);
+
+    Transaction findFirstByEstadoAndAdminValidadoTrueOrderByFechaCreacionAsc(String estado);
 }
