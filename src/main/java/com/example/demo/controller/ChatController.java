@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.VitaminaResponse;
 import com.example.demo.model.ChatMessage;
 import com.example.demo.model.Transaction;
 import com.example.demo.service.ChatService;
@@ -117,8 +118,13 @@ public class ChatController {
     }
 
     @GetMapping("/transactions/first-pending")
-    public Transaction getFirstPendingTransaction() {
-        return transactionService.getFirstPendingTransaction();
+    public VitaminaResponse getFirstPendingTransaction() {
+        Transaction transaction = transactionService.getFirstPendingTransaction();
+        if (transaction != null && Boolean.TRUE.equals(transaction.getAdminValidado())) {
+            return new VitaminaResponse(transaction.getVitamina());
+        } else {
+            return new VitaminaResponse(null); 
+        }
     }
 
     // Listar todas las transacciones (incluye imagen base64 si existe)
