@@ -19,7 +19,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin(origins = "http://localhost:5500")
+@CrossOrigin(origins = "https://esp32-74so-w.fly.dev")
 public class ChatController {
 
     private final TransactionService transactionService;
