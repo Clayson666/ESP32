@@ -21,9 +21,10 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    public Transaction getFirstPendingTransaction() {
-        return transactionRepository.findFirstByEstadoAndAdminValidadoTrueOrderByFechaCreacionAsc("PENDIENTE");
-    }
+public Transaction getFirstPendingTransaction() {
+    return transactionRepository.findFirstByEstadoOrderByFechaCreacionAsc("PENDIENTE").orElse(null);
+}
+
 
     // Listar todas las transacciones
     public List<Transaction> findAll() {

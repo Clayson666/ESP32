@@ -13,9 +13,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-
 
 @RestController
 @RequestMapping("/api/chat")
@@ -37,54 +38,99 @@ public class ChatController {
         String content = userMessage.getContent().trim();
 
         ChatMessage assistantMessage = new ChatMessage();
-        assistantMessage.setRole("eres un nutricionista con autoridad para decidir que vimitaminas dedbe tomar una persona de idioma español con respuestas cortas y puntuales si hay expandirse en la información se hace sino mejor ser conciso");
+        assistantMessage.setRole("assistant");
 
-        // 1️⃣ Usuario envía base64 de imagen del comprobante
-        if(content.startsWith("data:image")) {
+        // 1️⃣ Imagen del comprobante
+        if (content.startsWith("data:image")) {
             Transaction lastPending = transactionService.getFirstPendingTransaction();
-            if(lastPending != null) {
-                lastPending.setPaymentImage(content);
-                lastPending.setFechaPago(LocalDateTime.now());
-                transactionService.saveTransaction(lastPending);
-                assistantMessage.setContent("Comprobante recibido. ¡Gracias por tu compra!");
-                return assistantMessage;
-            } else {
+            System.out.println("[DEBUG] Buscando transacción pendiente...");
+            if (lastPending == null) {
+                System.out.println("[DEBUG] ❌ No se encontró transacción pendiente");
                 assistantMessage.setContent("No hay ninguna transacción pendiente para adjuntar este comprobante.");
                 return assistantMessage;
             }
-        }
 
-        // 2️⃣ Usuario confirma la vitamina (Vitamina C, Hierro, Zinc, B12)
-        if(content.equalsIgnoreCase("Vitamina C") ||
-        content.equalsIgnoreCase("Hierro") ||
-        content.equalsIgnoreCase("Zinc") ||
-        content.equalsIgnoreCase("B12")) {
-
-            Transaction transaction = new Transaction();
-            transaction.setVitamina(content);
-            transaction.setEstado("PENDIENTE");
-            transaction.setFechaCreacion(LocalDateTime.now());
-            transactionService.saveTransaction(transaction);
-
-            assistantMessage.setContent(
-                "Perfecto, registramos tu " + content +
-                ". Ahora sube la imagen del comprobante de pago."
-            );
+            System.out.println("[DEBUG] ✅ Transacción encontrada: " + lastPending.getId());
+            lastPending.setPaymentImage(content);
+            lastPending.setFechaPago(LocalDateTime.now());
+            transactionService.saveTransaction(lastPending);
+            System.out.println("[DEBUG] ✅ Comprobante guardado correctamente");
+            assistantMessage.setContent("Comprobante recibido. ¡Gracias por tu compra!");
             return assistantMessage;
         }
 
-        // 3️⃣ Texto libre → diagnóstico / recomendación por chatService
-        String response = chatService.getChatResponse(content);
-        System.out.println("[LOG] Respuesta del asistente: " + response);
+        // 2️⃣ Confirmación directa de vitamina (crea transacción)
+        if (esVitaminaValida(content)) {
+            Transaction tx = new Transaction();
+            tx.setVitamina(content);
+            tx.setEstado("PENDIENTE");
+            tx.setFechaCreacion(LocalDateTime.now());
+            transactionService.saveTransaction(tx);
 
-        // Agregar sugerencia de vitaminas **solo si el chat detecta que se puede recomendar**
-        response += "\nSi deseas, puedo recomendarte una vitamina: Vitamina C, Hierro, Zinc o B12. " +
-                    "Luego podrás confirmar tu elección y subir el comprobante.";
+            assistantMessage.setContent(
+                    "Confirmado: " + content +
+                            ". Sube el comprobante. Si tomas medicación o estás embarazada, consúltanos antes de iniciar.");
+            return assistantMessage;
+        }
 
-        assistantMessage.setContent(response);
+        // 3️⃣ Texto libre → interacción con IA
+        String promptSistema = """
+                Eres un nutricionista colegiado.
+                Solo puedes recomendar UNA vitamina entre: Vitamina C, Hierro, Zinc o B12.
+                No menciones ninguna otra.
+                Responde en español, de forma profesional y breve (máx 70 palabras).
+                """;
+
+        String inputFinal = promptSistema + "\nUsuario: " + content;
+
+        String raw = chatService.getChatResponse(inputFinal);
+        System.out.println("[LOG] Respuesta del asistente (raw): " + raw);
+
+        // ✂️ Filtro y limpieza
+        raw = filtrarVitaminasNoPermitidas(raw);
+        String breve = limitarPalabras(limpiarRelleno(raw), 70);
+
+        if (!breve.toLowerCase().startsWith("nutricionista"))
+            breve = "Nutricionista: " + breve;
+
+        assistantMessage.setContent(breve);
         return assistantMessage;
     }
 
+    // ---------- Helpers de limpieza ----------
+
+    private String limpiarRelleno(String t) {
+        if (t == null)
+            return "";
+        t = t.replaceAll("(?i)como modelo de lenguaje[^.\\n]*[.\\n]?", "");
+        t = t.replaceAll("(?i)no soy un sustituto[^.\\n]*[.\\n]?", "");
+        t = t.replaceAll("\\s+", " ").trim();
+        return t;
+    }
+
+    private String limitarPalabras(String t, int max) {
+        String[] w = t.split("\\s+");
+        if (w.length <= max)
+            return t;
+        return String.join(" ", Arrays.copyOfRange(w, 0, max)) + "...";
+    }
+
+    private String filtrarVitaminasNoPermitidas(String t) {
+        String[] prohibidas = { "vitamina d", "vitamina e", "vitamina a", "omega", "calcio", "magnesio" };
+        for (String p : prohibidas) {
+            t = t.replaceAll("(?i)" + p, "Vitamina C");
+        }
+        return t;
+    }
+
+    private boolean esVitaminaValida(String s) {
+        return s.equalsIgnoreCase("Vitamina C") ||
+                s.equalsIgnoreCase("Hierro") ||
+                s.equalsIgnoreCase("Zinc") ||
+                s.equalsIgnoreCase("B12");
+    }
+
+    // ---------- Historial ----------
     @GetMapping("/history")
     public List<ChatMessage> getHistory() {
         List<Map<String, String>> history = chatService.getConversationHistory();
@@ -106,7 +152,7 @@ public class ChatController {
         chatService.clearConversationHistory();
     }
 
-    // ----- TRANSACTIONS -----
+    // ---------- Transacciones ----------
     @PostMapping("/transactions")
     public Transaction createPendingTransaction(@RequestBody Map<String, String> payload) {
         String vitamina = payload.get("vitamina");
@@ -123,17 +169,15 @@ public class ChatController {
         if (transaction != null && Boolean.TRUE.equals(transaction.getAdminValidado())) {
             return new VitaminaResponse(transaction.getVitamina());
         } else {
-            return new VitaminaResponse(null); 
+            return new VitaminaResponse(null);
         }
     }
 
-    // Listar todas las transacciones (incluye imagen base64 si existe)
     @GetMapping("/transactions")
     public List<Transaction> listTransactions() {
         return transactionService.findAll();
     }
 
-    // Validar transacción por ID: adminValidado=true y fechaConfirmacion=now
     @PutMapping("/transactions/{id}/validate")
     public Transaction validateTransaction(@PathVariable int id) {
         Transaction tx = transactionService.findById(id)
