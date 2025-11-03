@@ -165,14 +165,13 @@ public class ChatController {
 
     @GetMapping("/transactions/first-pending")
     public VitaminaResponse getFirstPendingTransaction() {
-        Transaction transaction = transactionService.getFirstPendingTransaction();
-        if (transaction != null && Boolean.TRUE.equals(transaction.getAdminValidado())) {
-            return new VitaminaResponse(transaction.getVitamina());
-        } else {
-            return new VitaminaResponse(null);
-        }
+    Transaction transaction = transactionService.getFirstPendingTransaction();
+    if (transaction != null && Boolean.TRUE.equals(transaction.getAdminValidado())) {
+        return new VitaminaResponse(transaction.getId(), transaction.getVitamina());
+    } else {
+        return new VitaminaResponse(0 , null);
     }
-
+}
     @GetMapping("/transactions")
     public List<Transaction> listTransactions() {
         return transactionService.findAll();
